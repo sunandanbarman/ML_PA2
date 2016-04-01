@@ -178,7 +178,7 @@ def qdaTest(means,covmats,Xtest,ytest):
 	ypred = np.zeros([N,1], dtype = float);
 	invCov= np.copy(covmats) #creates list of same size, basically that's all I use it for, all values are over-written later
 	#print "numClass ",numClass
-	print len(covmats)
+	#print len(covmats)
 	for i in range(numClass): #for each of the k class, compute inverse(sigma)
 		invCov[i] = inv(covmats[i])
 
@@ -211,7 +211,17 @@ def learnOLERegression(X,y):
     # Output:
     # w = d x 1
     # IMPLEMENT THIS METHOD
-	w = np.array([])
+	N = X.shape[0]
+	d = X.shape[1]
+	"""
+	Using the formula w = inverse(X.transpose * X) * (X.transpose * y)
+	"""
+	Xtranspose_X = np.dot(np.transpose(X),X)
+	Xtranspose_Y = np.dot(np.transpose(X),y)
+	w = np.dot(inv(Xtranspose_X),Xtranspose_Y)
+	# without intercept :(64, 64)
+	# with intercept    : (65, 65)
+	#print w.shape
 	return w
 
 def learnRidgeRegression(X,y,lambd):
@@ -230,12 +240,31 @@ def testOLERegression(w,Xtest,ytest):
     # Inputs:
     # w = d x 1
     # Xtest = N x d
-    # ytest = X x 1
+    # ytest = N x 1
     # Output:
     # rmse
 
+	#Xtest : 200 * 64
+	#Ytest : 200 * 1
+	#w     : 64  * 64
     # IMPLEMENT THIS METHOD
-	rmse = np.array([])
+	#print Xtest.shape
+	#print "w shape",w.shape
+	#print ytest.shape
+	N = Xtest.shape[0]
+	"""
+	We use the shortcut np.dot(transpose(y- Xw),(y-Xw)) to rid ourselves of the summation term from the RMSE equation
+	"""
+	rmse  = 0.0
+	temp1 = np.dot(Xtest,w)
+	#print "temp1 ",temp1.shape
+	temp_rmse = (ytest - temp1)
+	#print "temp_rmse ",temp_rmse.shape
+	rmse      = np.sum(np.dot(np.transpose(temp_rmse),temp_rmse))
+
+	#print rmse.shape
+	rmse = sqrt(rmse / N)
+	print "rmse ",rmse
 	return rmse
 
 def regressionObjVal(w, X, y, lambd):

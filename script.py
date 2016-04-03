@@ -141,11 +141,12 @@ def ldaTest(means,covmat,Xtest,ytest):
 	#means = 2*5 , covmat = 2*2 matrix
 	acc   =0.0;
 	N 	  = Xtest.shape[0] # number of test examples
+	d = Xtest.shape[1]
 	numClass = means.shape[1] # number of means
 	ypred = np.zeros([N,1], dtype = float);
 	invCov= inv(covmat) #compute inverse(sigma)
 
-	constantTerm = 1 / (sqrt(np.power(2 * pi,numClass))  * sqrt(det(covmat))) #the constant term in p(x) formula
+	constantTerm = 1 / (sqrt(np.power(2 * pi,d))  * sqrt(det(covmat))) #the constant term in p(x) formula
 
 	"""The idea is to look at all the test examples given in Xtest, and apply the formula for computing p(x) to the dataset
 	The predicted label will be the one where the p(x) is maximum (different values of means will be tried out)"""
@@ -157,7 +158,7 @@ def ldaTest(means,covmat,Xtest,ytest):
 		#print "prediction ",prediction
 		if (prediction == ytest[i]): #check if prediction matches
 			acc += 1 #correct prediction
-			ypred[i] = prediction
+		ypred[i] = prediction
 	acc = acc / N #prediction accuracy percentage
 	return acc,ypred
 
@@ -174,6 +175,7 @@ def qdaTest(means,covmats,Xtest,ytest):
 
 	acc   =0.0;
 	N 	  = Xtest.shape[0] # number of test examples
+	d = Xtest.shape[1]
 	numClass = means.shape[1] # number of means
 	ypred = np.zeros([N,1], dtype = float);
 	invCov= np.copy(covmats) #creates list of same size, basically that's all I use it for, all values are over-written later
@@ -183,7 +185,7 @@ def qdaTest(means,covmats,Xtest,ytest):
 		invCov[i] = inv(covmats[i])
 
 	constantTerm = np.zeros(numClass) # list of length numClass
-	constantValue = sqrt(np.power(2 * pi,numClass))
+	constantValue = sqrt(np.power(2 * pi,d))
 	for i in range(numClass):
 		constantTerm[i] = 1 / (constantValue  * sqrt(det(covmats[i]))) #the constant term in p(x) formula
 
@@ -200,7 +202,7 @@ def qdaTest(means,covmats,Xtest,ytest):
 		#print "prediction ",prediction
 		if (prediction == ytest[i]): #check if prediction matches
 			acc += 1 #correct prediction
-			ypred[i] = prediction
+		ypred[i] = prediction
 	acc = acc / N #prediction accuracy percentage
 	return acc,ypred
 
@@ -233,7 +235,19 @@ def learnRidgeRegression(X,y,lambd):
     # w = d x 1
 
     # IMPLEMENT THIS METHOD
-	w = np.array([])
+	N = X.shape[0]
+	d = X.shape[1]
+	"""
+	Using the formula w = inverse(X.transpose * X) * (X.transpose * y)
+	"""
+	Xtranspose_X = np.dot(np.transpose(X),X)
+	#print "XTranspose_X shape",Xtranspose_X.shape
+	lI=np.zeros((d,d))
+	np.fill_diagonal(lI,lambd)
+	#print "lambda x I :",lI
+	Xtranspose_Sum=Xtranspose_X+lI
+	Xtranspose_Y = np.dot(np.transpose(X),y)
+	w = np.dot(inv(Xtranspose_Sum),Xtranspose_Y)
 	return w
 
 def testOLERegression(w,Xtest,ytest):
@@ -264,7 +278,7 @@ def testOLERegression(w,Xtest,ytest):
 
 	#print rmse.shape
 	rmse = sqrt(rmse / N)
-	print "rmse ",rmse
+	#print "rmse ",rmse
 	return rmse
 
 def regressionObjVal(w, X, y, lambd):
@@ -275,7 +289,55 @@ def regressionObjVal(w, X, y, lambd):
 
     # IMPLEMENT THIS METHOD
 
-    return error, error_grad
+	N=X.shape[0]
+	d=X.shape[1]
+	error=0;
+	grad=np.zeros(w.shape[0])
+
+	"""
+	for i in range(0,N):
+
+		#Xi = np.zeros([X.shape[1],1])
+		#print "Shape of Xi",Xi.shape
+		Xi=np.transpose(X[i,:])
+		#print "Shape of Xi",Xi.shape
+		Wtranspose=np.transpose(w)
+		#print "Shape of Wtranspose",Wtranspose.shape
+		term1 = (y[i,:] - np.dot(Wtranspose,Xi))
+		#print "Shape of term1",term1.shape
+		error+=term1*term1
+		out=np.multiply((-1*term1),Xi)
+		#print "Shape of w : ",w.shape
+		#print "grad : ",grad.shape
+		grad+=out
+
+	error_grad=grad
+	"""
+
+	Xi=np.transpose(X)
+	#print "Shape of Xi",Xi.shape
+	#print "Shape of y",y.shape
+	Wtranspose=w.reshape([w.shape[0],1])
+	#print "Shape of Wtranspose",Wtranspose.shape
+	term1 = (y - np.dot(X,Wtranspose))
+	#print "Shape of term1",term1.shape
+	error=np.sum(np.square(term1))
+	grad=np.dot(-1,np.dot(Xi,term1))
+	#print "Shape of w : ",w.shape
+	#print "grad : ",grad.shape
+	#grad+=out
+	error_grad=grad[:,0]
+
+
+	error=error/2
+
+
+	"""
+	Adding lambda term
+	"""
+
+	error=error + (0.5*lambd*np.sum(np.square(w)))
+	return error,error_grad
 
 def mapNonLinear(x,p):
     # Inputs:
@@ -322,6 +384,8 @@ zacc,zqdares = qdaTest(means,covmats,xx,np.zeros((xx.shape[0],1)))
 plt.contourf(x1,x2,zqdares.reshape((x1.shape[0],x2.shape[0])))
 plt.scatter(Xtest[:,0],Xtest[:,1],c=ytest)
 
+plt.show()
+
 # Problem 2
 
 if sys.version_info.major == 2:
@@ -353,6 +417,8 @@ for lambd in lambdas:
     i = i + 1
 plt.plot(lambdas,rmses3)
 
+plt.show()
+
 # Problem 4
 k = 101
 lambdas = np.linspace(0, 1, num=k)
@@ -368,7 +434,7 @@ for lambd in lambdas:
     rmses4[i] = testOLERegression(w_l,Xtest_i,ytest)
     i = i + 1
 plt.plot(lambdas,rmses4)
-
+plt.show()
 
 # Problem 5
 pmax = 7

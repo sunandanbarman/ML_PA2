@@ -326,7 +326,7 @@ def regressionObjVal(w, X, y, lambd):
 	#print "Shape of w : ",w.shape
 	#print "grad : ",grad.shape
 	#grad+=out
-	error_grad=grad[:,0]
+	error_grad=grad[:,0]+np.dot(lambd,w)
 
 
 	error=error/2

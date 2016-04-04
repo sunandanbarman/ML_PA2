@@ -2,7 +2,7 @@ import numpy as np
 from scipy.optimize import minimize
 from scipy.io import loadmat
 from numpy.linalg import det, inv
-from math import sqrt, pi
+from math import sqrt, pi, pow
 import scipy.io
 import matplotlib.pyplot as plt
 import pickle
@@ -346,6 +346,15 @@ def mapNonLinear(x,p):
     # Outputs:
     # Xd - (N x (d+1))
     # IMPLEMENT THIS METHOD
+    Xd = np.ones((x.shape[0],p+1))
+    i = 0
+    for xi in x:
+		j = 1
+		while(j<p+1):
+			Xd[i][j] = pow(xi,j)
+			j = j + 1
+		j = 1
+		i = i +1
     return Xd
 
 # Main script
@@ -449,3 +458,4 @@ for p in range(pmax):
     rmses5[p,1] = testOLERegression(w_d2,Xdtest,ytest)
 plt.plot(range(pmax),rmses5)
 plt.legend(('No Regularization','Regularization'))
+plt.show()

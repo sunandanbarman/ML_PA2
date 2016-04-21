@@ -4,6 +4,58 @@ from scipy.optimize import minimize
 
 np.set_printoptions(threshold=np.inf)
 
+"""
+Function to compute theta for all training data rows
+"""
+def computeTheta(initialWeights,train_data_row):
+    return sigmoid(np.dot(np.transpose(initialWeights), train_data_row))
+
+"""
+Function to compute {ln P(y|w)}  
+Parameters:
+    outputLabels  : the matrix y
+    train_data    : the matrix X (training data)
+    initialWeights: matrix W (weight vector)
+    theta_n       : theta_n matrix (see assignment specification)
+Return:
+    Value of Log-Likelihood for all training data
+"""
+def computeLogProbabilities(outputLabels,train_data,initialWeights,theta_n):
+    
+    n_data = train_data.shape[0] #no of training rows
+    logLikelihood = 0.0
+    i = 0
+    
+    log_theta_n     = np.zeros([n_data,1],dtype=float)
+    theta_n_minus_1 = np.zeros([n_data,1],dtype=float)
+    #print theta_n
+    log_theta_n     = np.log(theta_n)
+    #print log_theta_n[56]
+    theta_n_minus_1 = (1.0 - theta_n)
+    i = 0
+    for i in range(n_data):
+        logLikelihood = logLikelihood + np.dot(outputLabels[i],log_theta_n[i]) + np.dot((1 - outputLabels[i]), theta_n_minus_1[i]);
+    # print "logLikelihood ",logLikelihood
+    return logLikelihood
+
+"""
+Function to compute error_grad
+Parameters:
+    outputLabels  : the matrix y
+    train_data    : the matrix X (training data)
+    theta_n       : theta_n matrix (see assignment specification)
+Return:
+    Gradient of error function    
+"""
+def computeErrorGrad(outputLabels,train_data,theta_n):
+    n_data     = train_data.shape[0]
+    error_grad = np.zeros((train_data.shape[1] + 1, 1))
+    P = 0.0
+    P = np.divide(1.0,float(n_data))
+    error_grad = np.multiply(np.sum((theta_n - outputLabels) * train_data,axis=0),P)
+    return error_grad
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 def preprocess():
     """ 
      Input:
@@ -108,7 +160,7 @@ def blrObjFunction(initialWeights, *args):
 
     n_data = train_data.shape[0]
     n_features = train_data.shape[1]
-    error = 0
+    error = 0.0
     error_grad = np.zeros((n_features + 1, 1))
 
     ##################
@@ -116,18 +168,34 @@ def blrObjFunction(initialWeights, *args):
     ##################
     # HINT: Do not forget to add the bias term to your input data
     bias = np.ones((n_data,1))
-    print "bias :",bias.shape
+    # print "bias :",bias.shape
     """
     First concatenate the bias to the training data
     """
     train_data = np.concatenate( (bias,train_data),axis=1)
-
-    print "train_data :",train_data.shape
-    print "initialWeights :",initialWeights.shape
-    print "labeli ",labeli.shape
     """
+    Generate theta_n matrix
     """
+    theta_n         = np.zeros([n_data,1],dtype=float)
+    #Compute all theta_n first
+    for i in range(n_data):
+        theta_n[i]        = computeTheta(initialWeights,train_data[i])
 
+    # print "train_data :",train_data.shape
+    # print "initialWeights :",initialWeights.shape
+    # print "labeli ",labeli.shape
+    """
+    Compute log-likelihood value
+    """
+    logLikelihood = 0.0
+    logLikelihood = computeLogProbabilities(labeli,train_data,initialWeights,theta_n)
+    #print logLikelihood
+    error         = (((-1.0) * float(logLikelihood)) / n_data)
+    #print "error ",error
+
+    error_grad    = computeErrorGrad(labeli,train_data,theta_n)
+    # print "error_grad ",error_grad.shape
+    # print "error_grad ",error_grad[0]
     return error, error_grad
 
 
@@ -152,7 +220,29 @@ def blrPredict(W, data):
     # YOUR CODE HERE #
     ##################
     # HINT: Do not forget to add the bias term to your input data
+    #print "blrPredict data ",data.shape
+    """
+    Add the bias term at the beginning
+    """
+    n_data = data.shape[0]
+    bias = np.ones((n_data,1))
+    # print "bias :",bias.shape
+    """
+    First concatenate the bias to the training data
+    """
+    data = np.concatenate( (bias,data),axis=1)
+    #print "W ",W[0]
+    outputs = np.zeros([n_data,W.shape[1]],dtype=float)
+    #print "data ",data[0]
+    outputs = np.dot(data,W)
+    print outputs[0]
+#    print "outputs_interm ",outputs.shape
+    i = 0
+    for i in range(n_data):
 
+        label[i][0]  = np.argmax(outputs[i],axis=0)
+        #print "label[i][0] ",label[i][0]
+    #print "label ",label.shape
     return label
 
 
@@ -237,6 +327,7 @@ for i in range(n_class):
     args = (train_data, labeli)
     nn_params = minimize(blrObjFunction, initialWeights, jac=True, args=args, method='CG', options=opts)
     W[:, i] = nn_params.x.reshape((n_feature + 1,))
+    #print " W before ",W[i]
 
 # Find the accuracy on Training Dataset
 predicted_label = blrPredict(W, train_data)

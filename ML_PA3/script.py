@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.io import loadmat
 from scipy.optimize import minimize
+from sklearn.svm import SVC
 
 np.set_printoptions(threshold=np.inf)
 
@@ -11,7 +12,7 @@ def computeTheta(initialWeights,train_data_row):
     return sigmoid(np.dot(np.transpose(initialWeights), train_data_row))
 
 """
-Function to compute {ln P(y|w)}  
+Function to compute {ln P(y|w)}
 Parameters:
     outputLabels  : the matrix y
     train_data    : the matrix X (training data)
@@ -21,11 +22,11 @@ Return:
     Value of Log-Likelihood for all training data
 """
 def computeLogProbabilities(outputLabels,train_data,initialWeights,theta_n):
-    
+
     n_data = train_data.shape[0] #no of training rows
     logLikelihood = 0.0
     i = 0
-    
+
     log_theta_n     = np.zeros([n_data,1],dtype=float)
     theta_n_minus_1 = np.zeros([n_data,1],dtype=float)
     #print theta_n
@@ -45,7 +46,7 @@ Parameters:
     train_data    : the matrix X (training data)
     theta_n       : theta_n matrix (see assignment specification)
 Return:
-    Gradient of error function    
+    Gradient of error function
 """
 def computeErrorGrad(outputLabels,train_data,theta_n):
     n_data     = train_data.shape[0]
@@ -57,21 +58,21 @@ def computeErrorGrad(outputLabels,train_data,theta_n):
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 def preprocess():
-    """ 
+    """
      Input:
      Although this function doesn't have any input, you are required to load
      the MNIST data set from file 'mnist_all.mat'.
 
      Output:
-     train_data: matrix of training set. Each row of train_data contains 
+     train_data: matrix of training set. Each row of train_data contains
        feature vector of a image
      train_label: vector of label corresponding to each image in the training
        set
-     validation_data: matrix of training set. Each row of validation_data 
+     validation_data: matrix of training set. Each row of validation_data
        contains feature vector of a image
-     validation_label: vector of label corresponding to each image in the 
+     validation_label: vector of label corresponding to each image in the
        training set
-     test_data: matrix of training set. Each row of test_data contains 
+     test_data: matrix of training set. Each row of test_data contains
        feature vector of a image
      test_label: vector of label corresponding to each image in the testing
        set
@@ -147,11 +148,11 @@ def blrObjFunction(initialWeights, *args):
     its gradient.
 
     Input:
-        initialWeights: the weight vector (w_k) of size (D + 1) x 1 
+        initialWeights: the weight vector (w_k) of size (D + 1) x 1
         train_data: the data matrix of size N x D
         labeli: the label vector (y_k) of size N x 1 where each entry can be either 0 or 1 representing the label of corresponding feature vector
 
-    Output: 
+    Output:
         error: the scalar value of error function of 2-class logistic regression
         error_grad: the vector of size (D+1) x 1 representing the gradient of
                     error function
@@ -201,16 +202,16 @@ def blrObjFunction(initialWeights, *args):
 
 def blrPredict(W, data):
     """
-     blrObjFunction predicts the label of data given the data and parameter W 
+     blrObjFunction predicts the label of data given the data and parameter W
      of Logistic Regression
-     
+
      Input:
-         W: the matrix of weight of size (D + 1) x 10. Each column is the weight 
+         W: the matrix of weight of size (D + 1) x 10. Each column is the weight
          vector of a Logistic Regression classifier.
          X: the data matrix of size N x D
-         
-     Output: 
-         label: vector of size N x 1 representing the predicted label of 
+
+     Output:
+         label: vector of size N x 1 representing the predicted label of
          corresponding feature vector given in data matrix
 
     """
@@ -299,6 +300,12 @@ def mlrPredict(W, data):
 
     return label
 
+def multiples(m,count):
+    arr = np.zeros(11,)
+    for i in range(1,count):
+        arr[i] = i*m
+    arr[0] = 1
+    return arr
 
 """
 Script for Logistic Regression
@@ -349,6 +356,35 @@ print('\n\n--------------SVM-------------------\n\n')
 ##################
 # YOUR CODE HERE #
 ##################
+print('--------------Linear Kernel-------------------')
+clf = SVC(kernel="linear")
+clf.fit(train_data, train_label.reshape(train_label.shape[0],))
+print('\n Training set Accuracy:' + str(100 * np.mean((np.array([clf.predict(train_data)]) == train_label.T).astype(float))) + '%')
+print('\n Validation set Accuracy:' + str(100 * np.mean((np.array([clf.predict(validation_data)]) == validation_label.T).astype(float))) + '%')
+print('\n Testing set Accuracy:' + str(100 * np.mean((np.array([clf.predict(test_data)]) == test_label.T).astype(float))) + '%')
+
+print('\n--------------RBF Kernel - gamma=1-------------------')
+clf = SVC(kernel="rbf",gamma=1.0)
+clf.fit(train_data, train_label.reshape(train_label.shape[0],))
+print('\n Training set Accuracy:' + str(100 * np.mean((np.array([clf.predict(train_data)]) == train_label.T).astype(float))) + '%')
+print('\n Validation set Accuracy:' + str(100 * np.mean((np.array([clf.predict(validation_data)]) == validation_label.T).astype(float))) + '%')
+print('\n Testing set Accuracy:' + str(100 * np.mean((np.array([clf.predict(test_data)]) == test_label.T).astype(float))) + '%')
+
+print('\n--------------RBF Kernel - gamma=auto-------------------')
+clf = SVC(kernel="rbf",gamma="auto")
+clf.fit(train_data, train_label.reshape(train_label.shape[0],))
+print('\n Training set Accuracy:' + str(100 * np.mean((np.array([clf.predict(train_data)]) == train_label.T).astype(float))) + '%')
+print('\n Validation set Accuracy:' + str(100 * np.mean((np.array([clf.predict(validation_data)]) == validation_label.T).astype(float))) + '%')
+print('\n Testing set Accuracy:' + str(100 * np.mean((np.array([clf.predict(test_data)]) == test_label.T).astype(float))) + '%')
+
+arr = multiples(10.0,11)
+for i in arr:
+    print('\n--------------RBF Kernel - gamma='+str(i)+'-------------------')
+    clf = SVC(C=i, kernel="rbf",gamma="auto")
+    clf.fit(train_data, train_label.reshape(train_label.shape[0],))
+    print('\n Training set Accuracy:' + str(100 * np.mean((np.array([clf.predict(train_data)]) == train_label.T).astype(float))) + '%')
+    print('\n Validation set Accuracy:' + str(100 * np.mean((np.array([clf.predict(validation_data)]) == validation_label.T).astype(float))) + '%')
+    print('\n Testing set Accuracy:' + str(100 * np.mean((np.array([clf.predict(test_data)]) == test_label.T).astype(float))) + '%')
 
 
 """

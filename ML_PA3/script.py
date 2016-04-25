@@ -29,14 +29,16 @@ def computeLogProbabilities(outputLabels,train_data,initialWeights,theta_n):
 
     log_theta_n     = np.zeros([n_data,1],dtype=float)
     theta_n_minus_1 = np.zeros([n_data,1],dtype=float)
-    #print theta_n
-    log_theta_n     = np.log(theta_n)
-    #print log_theta_n[56]
+    log_theta_n_minus_1 = np.zeros([n_data,1],dtype=float)
     theta_n_minus_1 = (1.0 - theta_n)
-    i = 0
+    log_theta_n     = np.log(theta_n)
+    log_theta_n_minus_1=np.log(theta_n_minus_1)
+
+    logLikelihood=np.dot(np.transpose(outputLabels),log_theta_n)+np.dot(np.transpose(1-outputLabels),log_theta_n_minus_1)
+    """
     for i in range(n_data):
-        logLikelihood = logLikelihood + np.dot(outputLabels[i],log_theta_n[i]) + np.dot((1 - outputLabels[i]), theta_n_minus_1[i]);
-    # print "logLikelihood ",logLikelihood
+        logLikelihood = logLikelihood + np.dot(outputLabels[i],log_theta_n[i]) + np.dot((1 - outputLabels[i]), log_theta_n_minus_1[i]);
+    """
     return logLikelihood
 
 """
@@ -50,11 +52,11 @@ Return:
 """
 def computeErrorGrad(outputLabels,train_data,theta_n):
     n_data     = train_data.shape[0]
-    error_grad = np.zeros((train_data.shape[1] + 1, 1))
+    error_grad = np.zeros((train_data.shape[1]+1, 1))
     P = 0.0
-    P = np.divide(1.0,float(n_data))
-    error_grad = np.multiply(np.sum((theta_n - outputLabels) * train_data,axis=0),P)
-    return error_grad
+    P = 1.0/float(n_data)
+    error_grad = (np.dot(P, np.dot(np.transpose(train_data),(theta_n - outputLabels))))
+    return error_grad[:,0]
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 def preprocess():
@@ -62,7 +64,6 @@ def preprocess():
      Input:
      Although this function doesn't have any input, you are required to load
      the MNIST data set from file 'mnist_all.mat'.
-
      Output:
      train_data: matrix of training set. Each row of train_data contains
        feature vector of a image
@@ -146,12 +147,10 @@ def blrObjFunction(initialWeights, *args):
     """
     blrObjFunction computes 2-class Logistic Regression error function and
     its gradient.
-
     Input:
         initialWeights: the weight vector (w_k) of size (D + 1) x 1
         train_data: the data matrix of size N x D
         labeli: the label vector (y_k) of size N x 1 where each entry can be either 0 or 1 representing the label of corresponding feature vector
-
     Output:
         error: the scalar value of error function of 2-class logistic regression
         error_grad: the vector of size (D+1) x 1 representing the gradient of
@@ -169,22 +168,21 @@ def blrObjFunction(initialWeights, *args):
     ##################
     # HINT: Do not forget to add the bias term to your input data
     bias = np.ones((n_data,1))
-    # print "bias :",bias.shape
+
     """
-    First concatenate the bias to the training data
+    Concatenating the bias to the training data
     """
     train_data = np.concatenate( (bias,train_data),axis=1)
+
     """
     Generate theta_n matrix
     """
-    theta_n         = np.zeros([n_data,1],dtype=float)
-    #Compute all theta_n first
-    for i in range(n_data):
-        theta_n[i]        = computeTheta(initialWeights,train_data[i])
+    theta_n= np.zeros([n_data,1],dtype=float)
+    W_transposeX=np.dot(train_data,initialWeights)
 
-    # print "train_data :",train_data.shape
-    # print "initialWeights :",initialWeights.shape
-    # print "labeli ",labeli.shape
+    for i in range(n_data):
+        theta_n[i] = sigmoid(W_transposeX[i])
+
     """
     Compute log-likelihood value
     """
@@ -192,11 +190,8 @@ def blrObjFunction(initialWeights, *args):
     logLikelihood = computeLogProbabilities(labeli,train_data,initialWeights,theta_n)
     #print logLikelihood
     error         = (((-1.0) * float(logLikelihood)) / n_data)
-    #print "error ",error
-
+    print('error ',error)
     error_grad    = computeErrorGrad(labeli,train_data,theta_n)
-    # print "error_grad ",error_grad.shape
-    # print "error_grad ",error_grad[0]
     return error, error_grad
 
 
@@ -204,16 +199,13 @@ def blrPredict(W, data):
     """
      blrObjFunction predicts the label of data given the data and parameter W
      of Logistic Regression
-
      Input:
          W: the matrix of weight of size (D + 1) x 10. Each column is the weight
          vector of a Logistic Regression classifier.
          X: the data matrix of size N x D
-
      Output:
          label: vector of size N x 1 representing the predicted label of
          corresponding feature vector given in data matrix
-
     """
     label = np.zeros((data.shape[0], 1))
 
@@ -227,23 +219,16 @@ def blrPredict(W, data):
     """
     n_data = data.shape[0]
     bias = np.ones((n_data,1))
-    # print "bias :",bias.shape
     """
-    First concatenate the bias to the training data
+    Concatenating the bias to the training data
     """
     data = np.concatenate( (bias,data),axis=1)
-    #print "W ",W[0]
     outputs = np.zeros([n_data,W.shape[1]],dtype=float)
-    #print "data ",data[0]
     outputs = np.dot(data,W)
-    print outputs[0]
-#    print "outputs_interm ",outputs.shape
+    print (outputs[0])
     i = 0
     for i in range(n_data):
-
         label[i][0]  = np.argmax(outputs[i],axis=0)
-        #print "label[i][0] ",label[i][0]
-    #print "label ",label.shape
     return label
 
 
@@ -251,27 +236,54 @@ def mlrObjFunction(params, *args):
     """
     mlrObjFunction computes multi-class Logistic Regression error function and
     its gradient.
-
     Input:
-        initialWeights: the weight vector of size (D + 1) x 1
+        initialWeights: the weight vector of size (D + 1) x 10
         train_data: the data matrix of size N x D
-        labeli: the label vector of size N x 1 where each entry can be either 0 or 1
+        labeli: the label vector of size N x 10 where each entry can be either 0 or 1
                 representing the label of corresponding feature vector
-
     Output:
         error: the scalar value of error function of multi-class logistic regression
         error_grad: the vector of size (D+1) x 10 representing the gradient of
                     error function
     """
+    train_data, Y = args
+
     n_data = train_data.shape[0]
     n_feature = train_data.shape[1]
     error = 0
     error_grad = np.zeros((n_feature + 1, n_class))
 
+    initialWeights_b = params.reshape(n_feature+1,10)
     ##################
     # YOUR CODE HERE #
     ##################
     # HINT: Do not forget to add the bias term to your input data
+    bias = np.ones((n_data,1))
+    numerator = np.zeros([n_data,n_feature + 1],dtype=float)
+    denominator = np.zeros([n_data,1],dtype=float)
+
+    """
+    Concatenating the bias to the training data
+    """
+    train_data = np.concatenate( (bias,train_data),axis=1)
+    #print('train_data = ',train_data.shape)
+
+    theta_nk= np.zeros([n_data,n_feature + 1],dtype=float)
+
+    denominator = (np.sum(np.exp(np.dot(train_data,initialWeights_b)),axis=1)).reshape(n_data,1)
+    numerator = np.exp(np.dot(train_data,initialWeights_b))
+
+    theta_nk = np.divide(numerator,denominator)
+    log_theta_nk = np.log(theta_nk)
+
+    err = np.sum(np.sum(np.multiply(Y,log_theta_nk),0))
+    P = 1.0/float(n_data)
+
+    error = -1.0*P*err
+    print('error_mlr = ',error)
+
+    theta_minus_y_transpose=np.transpose(theta_nk-Y)
+    error_grad=(np.dot(P,np.transpose(np.dot(theta_minus_y_transpose,train_data)))).flatten()
 
     return error, error_grad
 
@@ -280,16 +292,13 @@ def mlrPredict(W, data):
     """
      mlrObjFunction predicts the label of data given the data and parameter W
      of Logistic Regression
-
      Input:
          W: the matrix of weight of size (D + 1) x 10. Each column is the weight
          vector of a Logistic Regression classifier.
          X: the data matrix of size N x D
-
      Output:
          label: vector of size N x 1 representing the predicted label of
          corresponding feature vector given in data matrix
-
     """
     label = np.zeros((data.shape[0], 1))
 
@@ -297,9 +306,26 @@ def mlrPredict(W, data):
     # YOUR CODE HERE #
     ##################
     # HINT: Do not forget to add the bias term to your input data
-
+    """
+    Add the bias term at the beginning
+    """
+    n_data = data.shape[0]
+    bias = np.ones((n_data,1))
+    """
+    Concatenate the bias to the training data
+    """
+    data = np.concatenate( (bias,data),axis=1)
+    outputs = np.zeros([n_data,W.shape[1]],dtype=float)
+    outputs = np.dot(data,W)
+    print (outputs[0])
+    i = 0
+    for i in range(n_data):
+        label[i][0]  = np.argmax(outputs[i],axis=0)
     return label
 
+"""
+Multiply function for SVN
+"""
 def multiples(m,count):
     arr = np.zeros(11,)
     for i in range(1,count):
@@ -347,6 +373,8 @@ print('\n Validation set Accuracy:' + str(100 * np.mean((predicted_label == vali
 # Find the accuracy on Testing Dataset
 predicted_label = blrPredict(W, test_data)
 print('\n Testing set Accuracy:' + str(100 * np.mean((predicted_label == test_label).astype(float))) + '%')
+
+
 
 """
 Script for Support Vector Machine

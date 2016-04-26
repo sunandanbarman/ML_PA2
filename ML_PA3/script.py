@@ -407,7 +407,7 @@ print('\n Testing set Accuracy:' + str(100 * np.mean((np.array([clf.predict(test
 
 arr = multiples(10.0,11)
 for i in arr:
-    print('\n--------------RBF Kernel - gamma='+str(i)+'-------------------')
+    print('\n--------------RBF Kernel - C='+str(i)+'-------------------')
     clf = SVC(C=i, kernel="rbf",gamma="auto")
     clf.fit(train_data, train_label.reshape(train_label.shape[0],))
     print('\n Training set Accuracy:' + str(100 * np.mean((np.array([clf.predict(train_data)]) == train_label.T).astype(float))) + '%')

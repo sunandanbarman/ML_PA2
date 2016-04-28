@@ -2,6 +2,7 @@ import numpy as np
 from scipy.io import loadmat
 from scipy.optimize import minimize
 from sklearn.svm import SVC
+import cPickle as pickle
 
 np.set_printoptions(threshold=np.inf)
 
@@ -190,7 +191,7 @@ def blrObjFunction(initialWeights, *args):
     logLikelihood = computeLogProbabilities(labeli,train_data,initialWeights,theta_n)
     #print logLikelihood
     error         = (((-1.0) * float(logLikelihood)) / n_data)
-    print('error ',error)
+    #print('error ',error)
     error_grad    = computeErrorGrad(labeli,train_data,theta_n)
     return error, error_grad
 
@@ -225,7 +226,7 @@ def blrPredict(W, data):
     data = np.concatenate( (bias,data),axis=1)
     outputs = np.zeros([n_data,W.shape[1]],dtype=float)
     outputs = np.dot(data,W)
-    print (outputs[0])
+    #print (outputs[0])
     i = 0
     for i in range(n_data):
         label[i][0]  = np.argmax(outputs[i],axis=0)
@@ -280,7 +281,7 @@ def mlrObjFunction(params, *args):
     P = 1.0/float(n_data)
 
     error = -1.0*P*err
-    print('error_mlr = ',error)
+    #print('error_mlr = ',error)
 
     theta_minus_y_transpose=np.transpose(theta_nk-Y)
     error_grad=(np.dot(P,np.transpose(np.dot(theta_minus_y_transpose,train_data)))).flatten()
@@ -317,7 +318,7 @@ def mlrPredict(W, data):
     data = np.concatenate( (bias,data),axis=1)
     outputs = np.zeros([n_data,W.shape[1]],dtype=float)
     outputs = np.dot(data,W)
-    print (outputs[0])
+    #print (outputs[0])
     i = 0
     for i in range(n_data):
         label[i][0]  = np.argmax(outputs[i],axis=0)
@@ -362,6 +363,9 @@ for i in range(n_class):
     W[:, i] = nn_params.x.reshape((n_feature + 1,))
     #print " W before ",W[i]
 
+with open('params.pickle', 'wb') as f1:
+    pickle.dump(W, f1)
+
 # Find the accuracy on Training Dataset
 predicted_label = blrPredict(W, train_data)
 print('\n Training set Accuracy:' + str(100 * np.mean((predicted_label == train_label).astype(float))) + '%')
@@ -373,7 +377,6 @@ print('\n Validation set Accuracy:' + str(100 * np.mean((predicted_label == vali
 # Find the accuracy on Testing Dataset
 predicted_label = blrPredict(W, test_data)
 print('\n Testing set Accuracy:' + str(100 * np.mean((predicted_label == test_label).astype(float))) + '%')
-
 
 
 """
@@ -415,6 +418,7 @@ for i in arr:
     print('\n Testing set Accuracy:' + str(100 * np.mean((np.array([clf.predict(test_data)]) == test_label.T).astype(float))) + '%')
 
 
+
 """
 Script for Extra Credit Part
 """
@@ -426,6 +430,9 @@ opts_b = {'maxiter': 100}
 args_b = (train_data, Y)
 nn_params = minimize(mlrObjFunction, initialWeights_b, jac=True, args=args_b, method='CG', options=opts_b)
 W_b = nn_params.x.reshape((n_feature + 1, n_class))
+
+with open('params_bonus.pickle', 'wb') as f2:
+    pickle.dump(W_b, f2)
 
 # Find the accuracy on Training Dataset
 predicted_label_b = mlrPredict(W_b, train_data)

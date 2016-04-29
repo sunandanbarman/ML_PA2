@@ -3,6 +3,7 @@ from scipy.io import loadmat
 from scipy.optimize import minimize
 from sklearn.svm import SVC
 import cPickle as pickle
+import matplotlib.pyplot as plt
 
 np.set_printoptions(threshold=np.inf)
 
@@ -328,7 +329,7 @@ def mlrPredict(W, data):
 Multiply function for SVN
 """
 def multiples(m,count):
-    arr = np.zeros(11,)
+    arr = np.zeros(count,)
     for i in range(1,count):
         arr[i] = i*m
     arr[0] = 1
@@ -408,14 +409,29 @@ print('\n Training set Accuracy:' + str(100 * np.mean((np.array([clf.predict(tra
 print('\n Validation set Accuracy:' + str(100 * np.mean((np.array([clf.predict(validation_data)]) == validation_label.T).astype(float))) + '%')
 print('\n Testing set Accuracy:' + str(100 * np.mean((np.array([clf.predict(test_data)]) == test_label.T).astype(float))) + '%')
 
-arr = multiples(10.0,11)
+count = 11
+arr = multiples(10.0,count)
+training = np.zeros(count)
+validation = np.zeros(count)
+testing = np.zeros(count)
+k = 0
 for i in arr:
     print('\n--------------RBF Kernel - C='+str(i)+'-------------------')
     clf = SVC(C=i, kernel="rbf",gamma="auto")
     clf.fit(train_data, train_label.reshape(train_label.shape[0],))
-    print('\n Training set Accuracy:' + str(100 * np.mean((np.array([clf.predict(train_data)]) == train_label.T).astype(float))) + '%')
-    print('\n Validation set Accuracy:' + str(100 * np.mean((np.array([clf.predict(validation_data)]) == validation_label.T).astype(float))) + '%')
-    print('\n Testing set Accuracy:' + str(100 * np.mean((np.array([clf.predict(test_data)]) == test_label.T).astype(float))) + '%')
+    training[k] = 100 * np.mean((np.array([clf.predict(train_data)]) == train_label.T).astype(float))
+    print('\n Training set Accuracy:' + str(training[k]) + '%')
+    validation[k] = 100 * np.mean((np.array([clf.predict(validation_data)]) == validation_label.T).astype(float))
+    print('\n Validation set Accuracy:' + str(validation[k]) + '%')
+    testing[k] = 100 * np.mean((np.array([clf.predict(test_data)]) == test_label.T).astype(float))
+    print('\n Testing set Accuracy:' + str(testing[k]) + '%')
+    k = k+1
+
+plt.plot(arr,training)
+plt.plot(arr,validation)
+plt.plot(arr,testing)
+plt.legend(('Training Set Accuracy','Validation set Accuracy', 'Testing set Accuracy'))
+plt.show()
 
 
 
